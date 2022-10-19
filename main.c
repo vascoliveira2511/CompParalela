@@ -22,5 +22,5 @@ void inicializar(float *px, float *py, float *cx, float *cy)
 
 int main()
 {
-    printf("N = %i, K = %i", N, K);
+    printf("N = %i, K = %i\n", N, K);
 }
