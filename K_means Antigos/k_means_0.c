@@ -1,134 +1,132 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 
-#define K 4
 #define N 10000000
+#define K 4
 
-typedef struct PointStruct {
-	float x, y;
-	int assigned_cluster;
-} *pPoint, Point;
-
-typedef struct ClusterStruct {
-	Point centroid;
-	int size;
-} *pCluster, Cluster;
-
-void printPoint(Point p)
+void init(float *px, float *py, float *cx, float *cy)
 {
-	printf("(%f, %f)", p.x, p.y);
+    srand(10);
+    for (int i = 0; i < N; i++)
+    {
+        px[i] = (float)rand() / RAND_MAX;
+        py[i] = (float)rand() / RAND_MAX;
+    }
+
+    for (int i = 0; i < K; i++)
+    {
+        cx[i] = px[i];
+        cy[i] = py[i];
+    }
 }
 
-void printCluster(Cluster c)
+int *kmeans(float *px, float *py, float *cx, float *cy)
 {
-	printf("( ");
-	printPoint(c.centroid);
-	printf(", [ %d ] )\n", c.size);
+    float *dx = (float *)malloc(N * sizeof(float));
+    float *dy = (float *)malloc(N * sizeof(float));
+    int *count = (int *)malloc(K * sizeof(int));
+    float *sumx = (float *)malloc(K * sizeof(float));
+    float *sumy = (float *)malloc(K * sizeof(float));
+
+    for (int i = 0; i < K; i++)
+    {
+        count[i] = 0;
+        sumx[i] = 0;
+        sumy[i] = 0;
+    }
+
+    for (int i = 0; i < N; i++)
+    {
+        float min = 1000000;
+        int min_index = 0;
+        for (int j = 0; j < K; j++)
+        {
+            dx[i] = px[i] - cx[j];
+            dy[i] = py[i] - cy[j];
+            float dist = dx[i] * dx[i] + dy[i] * dy[i];
+            if (dist < min)
+            {
+                min = dist;
+                min_index = j;
+            }
+        }
+        count[min_index]++;
+        sumx[min_index] += px[i];
+        sumy[min_index] += py[i];
+    }
+
+    for (int i = 0; i < K; i++)
+    {
+        cx[i] = sumx[i] / count[i];
+        cy[i] = sumy[i] / count[i];
+    }
+
+    free(dx);
+    free(dy);
+    free(sumx);
+    free(sumy);
+    return count;
 }
 
-float eucDist(Point a, Point b)
+int has_converged(float *cx, float *cy, float *cx_old, float *cy_old)
 {
-	return (a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y);
-}
-
-void populateSamples(Point arr[])
-{
-	for(int i = 0; i < N; i++)
-	{
-		arr[i].x = ((float) rand() / (float) (RAND_MAX));
-		arr[i].y = ((float) rand() / (float) (RAND_MAX));
-		arr[i].assigned_cluster = -1;
-	}
-}
-
-void initCluster(pCluster c, Point p)
-{
-	c->centroid.x = p.x;
-	c->centroid.y = p.y;
-	c->size = 0;
-}
-
-void initClusters(Cluster clusters[], Point samples[])
-{
-	for(int i = 0; i < K; i++)
-		initCluster(&clusters[i], samples[i]);
-}
-
-int assignSamples(Cluster clusters[], Point samples[])
-{
-	int changed = 0;
-	for(int i = 0; i < N; i++)
-	{
-		int nearest_idx = 0;
-		for(int j = 0; j < K; j++)
-		{
-			if(eucDist(samples[i],clusters[j].centroid) < eucDist(samples[i], clusters[nearest_idx].centroid))
-				nearest_idx = j;
-		}
-		if (samples[i].assigned_cluster == nearest_idx)
-			continue;
-		else {
-			clusters[samples[i].assigned_cluster].size --;
-			samples[i].assigned_cluster = nearest_idx;
-			clusters[nearest_idx].size ++;
-			changed ++;
-		}
-	}
-	return changed;
-}
-
-void updateCentroids(Cluster clusters[], Point samples[])
-{
-	Cluster new_clusters[K];
-	for(int i = 0; i < K; i++)
-	{
-		new_clusters[i].centroid.x = 0.f;
-		new_clusters[i].centroid.y = 0.f;
-	}
-
-
-	for(int i = 0; i < N; i++)
-	{
-		new_clusters[samples[i].assigned_cluster].centroid.x += samples[i].x;
-		new_clusters[samples[i].assigned_cluster].centroid.y += samples[i].y;
-	}
-
-
-	for(int i = 0; i < K; i++)
-	{
-		clusters[i].centroid.x = new_clusters[i].centroid.x / (float) clusters[i].size;
-		clusters[i].centroid.y = new_clusters[i].centroid.y / (float) clusters[i].size;
-	}
+    for (int i = 0; i < K; i++)
+    {
+        if (cx[i] != cx_old[i] || cy[i] != cy_old[i])
+        {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 int main()
 {
-	srand(10);
+    float *px = (float *)malloc(N * sizeof(float));
+    float *py = (float *)malloc(N * sizeof(float));
+    float *cx = (float *)malloc(K * sizeof(float));
+    float *cy = (float *)malloc(K * sizeof(float));
 
-	Point *samples = malloc(N * sizeof(Point));
-	Cluster clusters[K];
-	
-	
-	populateSamples(samples);
-	initClusters(clusters, samples);
-	assignSamples(clusters, samples);
+    int iterator = 0;
+    int *count;
 
-	int changed, iterations = 0;
+    init(px, py, cx, cy);
 
-	do
-	{
-		iterations++;
-		updateCentroids(clusters, samples);
-		changed = assignSamples(clusters, samples);
+    while (1)
+    {
+        float *cx_old = (float *)malloc(K * sizeof(float));
+        float *cy_old = (float *)malloc(K * sizeof(float));
 
-	} while(changed>0);
+        for (int i = 0; i < K; i++)
+        {
+            cx_old[i] = cx[i];
+            cy_old[i] = cy[i];
+        }
 
-	printf("N = %d, K = %d\n", N, K);
-	for(int i = 0; i < K; i++)
-		printCluster(clusters[i]);
-	printf("Iterations: %d\n", iterations);
+        count = kmeans(px, py, cx, cy);
 
-	free(samples);
-	return 0;
+        if (has_converged(cx, cy, cx_old, cy_old))
+        {
+            break;
+        }
+
+        free(cx_old);
+        free(cy_old);
+        free(count);
+        iterator++;
+    }
+
+    printf("Iterations: %d times \n ", iterator);
+    for (int i = 0; i < K; i++)
+    {
+        printf("Cluster %d: (%f, %f) \n", i, cx[i], cy[i]);
+        printf("Count: %d \n", count[i]);
+    }
+
+    free(px);
+    free(py);
+    free(cx);
+    free(cy);
+
+    return 0;
 }
