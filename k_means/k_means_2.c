@@ -55,16 +55,17 @@ int kmeans(float *px, float *py, float *cx, float *cy, int *count)
         sumy[min_index] += py[i];
     }
 
-    for (int i = 0; i < K; i++) // esta secção vai correr K vezes
+    for (int i = 0; i < K; i++)
     {
-        float newx = sumx[i] / count[i];
-        float newy = sumy[i] / count[i];
+        float x = sumx[i] / count[i];
+        float y = sumy[i] / count[i];
 
-        changed += newx != cx[i] || newy != cy[i];
-
-        // Atribui nos dois casos, mesmo que não haja alteração
-        cx[i] = newx;
-        cy[i] = newy;
+        if (cx[i] != x || cy[i] != y)
+        {
+            cx[i] = x;
+            cy[i] = y;
+            changed = 1;
+        }
     }
 
     return changed;
