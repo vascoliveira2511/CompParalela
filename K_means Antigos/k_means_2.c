@@ -24,47 +24,52 @@ void init(float *px, float *py, float *cx, float *cy)
 int kmeans(float *px, float *py, float *cx, float *cy, int *count)
 {
     int changed = 0;
-    float sumx[K];
-    float sumy[K];
+    float sum_x[K];
+    float sum_y[K];
 
     for (int i = 0; i < K; i++)
     {
         count[i] = 0;
-        sumx[i] = 0;
-        sumy[i] = 0;
+        sum_x[i] = 0;
+        sum_y[i] = 0;
     }
 
     for (int i = 0; i < N; i++)
     {
-        float min = 1000000;
+        // de onde vem este min??
+        float min = 10000;
         int min_index = 0;
+
+        float aux_x = px[i];
+        float aux_y = py[i];
 
         // esta secção vai correr N*K vezes
         for (int j = 0; j < K; j++)
         {
-            float distx = px[i] - cx[i];
-            float disty = py[i] - cy[j];
+            aux_x -= cx[j];
+            aux_y -= cy[j];
 
-            float dist = distx * distx + disty * disty;
+            float dist = aux_x * aux_x + aux_y * aux_y;
 
-            min = dist < min ? dist : min;          // min = min(dist, min)
-            min_index = dist < min ? j : min_index; // min_index = min(dist, min_index)
+            min_index = dist < min ? j : min_index;
+            min = dist < min ? dist : min;
         }
         count[min_index]++;
-        sumx[min_index] += px[i];
-        sumy[min_index] += py[i];
+        sum_x[min_index] += px[i];
+        sum_y[min_index] += py[i];
     }
 
-    for (int i = 0; i < K; i++) // esta secção vai correr K vezes
+    for (int i = 0; i < K; i++)
     {
-        float newx = sumx[i] / count[i];
-        float newy = sumy[i] / count[i];
+        float x = sum_x[i] / count[i];
+        float y = sum_y[i] / count[i];
 
-        changed += newx != cx[i] || newy != cy[i];
-
-        // Atribui nos dois casos, mesmo que não haja alteração
-        cx[i] = newx;
-        cy[i] = newy;
+        if (cx[i] != x || cy[i] != y)
+        {
+            cx[i] = x;
+            cy[i] = y;
+            changed = 1;
+        }
     }
 
     return changed;

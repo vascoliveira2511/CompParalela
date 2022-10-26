@@ -29,7 +29,6 @@ void init(Point *points, Point *clusters)
 int kmeans(Point *points, Point *clusters, int *count)
 {
     int changed = 0;
-    Point *distance_of_points = malloc(N * sizeof(Point));
     Point sum_of_distances[K];
 
     for (int i = 0; i < K; i++)
@@ -48,11 +47,10 @@ int kmeans(Point *points, Point *clusters, int *count)
         // esta secção vai correr N*K vezes
         for (int j = 0; j < K; j++)
         {
-            distance_of_points[i].x = points[i].x - clusters[j].x;
-            distance_of_points[i].y = points[i].y - clusters[j].y;
+            float distx = points[i].x - clusters[j].x;
+            float disty = points[i].y - clusters[j].y;
 
-            float dist = distance_of_points[i].x * distance_of_points[i].x +
-                         distance_of_points[i].y * distance_of_points[i].y;
+            float dist = distx * distx + disty * disty;
 
             if (dist < min)
             {
@@ -77,8 +75,6 @@ int kmeans(Point *points, Point *clusters, int *count)
             changed = 1;
         }
     }
-
-    free(distance_of_points);
 
     return changed;
 }

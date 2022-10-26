@@ -1,29 +1,32 @@
+#include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define N 10000000
 #define K 4
 
-// Exemple of the matrix of points:
-//  [x_0, y_0]
-//  [x_1, y_1]
-//  [..., ...]
-//  [x_n, y_n]
+typedef struct Point
+{
+    float x, y;
+} Point;
 
 void init(Point *points, Point *clusters)
 {
     srand(10);
-    for (int i = 0; i < (N * 2); i++)
+    for (int i = 0; i < N; i++)
     {
-        points[i] = (float)rand() / RAND_MAX;
+        points[i].x = (float)rand() / RAND_MAX;
+        points[i].y = (float)rand() / RAND_MAX;
     }
 
-    for (int i = 0; i < (K * 2); i++)
+    for (int i = 0; i < K; i++)
     {
-        clusters[i] = points[i];
+        clusters[i].x = points[i].x;
+        clusters[i].y = points[i].y;
     }
 }
 
-int kmeans(float *points, float *clusters, int *count)
+int kmeans(Point *points, Point *clusters, int *count)
 {
     int changed = 0;
     Point sum_of_distances[K];
@@ -31,26 +34,23 @@ int kmeans(float *points, float *clusters, int *count)
     for (int i = 0; i < K; i++)
     {
         count[i] = 0;
-        sum_of_distances[i] = 0;
-        sum_of_distances[i + 1] = 0;
+        sum_of_distances[i].x = 0;
+        sum_of_distances[i].y = 0;
     }
 
-    for (int i = 0; i < N; i += 2)
+    for (int i = 0; i < N; i++)
     {
         // de onde vem este min??
         float min = 1000000000;
         int min_index = 0;
 
-        float x = points[i];
-        float y = points[i + 1].y;
-
         // esta secção vai correr N*K vezes
-        for (int j = 0; j < K; j += 2)
+        for (int j = 0; j < K; j++)
         {
-            float dist_x = x - clusters[j].x;
-            float dist_y = y - clusters[j + 1].y;
+            float distx = points[i].x - clusters[j].x;
+            float disty = points[i].y - clusters[j].y;
 
-            float dist = dist_x * dist_x + dist_y * dist_y;
+            float dist = distx * distx + disty * disty;
 
             if (dist < min)
             {
@@ -60,18 +60,18 @@ int kmeans(float *points, float *clusters, int *count)
         }
         count[min_index]++;
         sum_of_distances[min_index].x += points[i].x;
-        sum_of_distances[min_index].y += points[i + 1].y;
+        sum_of_distances[min_index].y += points[i].y;
     }
 
     for (int i = 0; i < K; i++)
     {
-        float x = sum_of_distances[i * 2 - 1].x / count[i];
-        float y = sum_of_distances[i * 2].y / count[i];
+        float x = sum_of_distances[i].x / count[i];
+        float y = sum_of_distances[i].y / count[i];
 
-        if (clusters[i * 2 - 1].x != x || clusters[i * 2].y != y)
+        if (clusters[i].x != x || clusters[i].y != y)
         {
-            clusters[i * 2 - 1] = x;
-            clusters[i * 2] = y;
+            clusters[i].x = x;
+            clusters[i].y = y;
             changed = 1;
         }
     }
@@ -81,9 +81,9 @@ int kmeans(float *points, float *clusters, int *count)
 
 int main()
 {
-    float *points = malloc(N * 2 * sizeof(float));
+    Point *points = malloc(N * sizeof(Point));
     // float *py = (float *)malloc(N * sizeof(float));
-    float clusters[K * 2];
+    Point clusters[K];
     // float *cy = (float *)malloc(K * sizeof(float));
 
     int iterator = 0;
@@ -99,7 +99,7 @@ int main()
     printf("Iterations: %d times \n ", iterator);
     for (int i = 0; i < K; i++)
     {
-        printf("Cluster %d: (%f, %f) \n", i, clusters[i * 2 - 1].x, clusters[i * 2].y);
+        printf("Cluster %d: (%f, %f) \n", i, clusters[i].x, clusters[i].y);
         printf("Count: %d \n", count[i]);
     }
 
