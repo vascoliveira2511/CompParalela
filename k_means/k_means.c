@@ -43,6 +43,7 @@ int kmeans(Point *points, Point *clusters, int *count)
         // de onde vem este min??
         float min = 1000000000;
         int min_index = 0;
+        float dist[K];
 
         // esta secção vai correr N*K vezes
         for (int j = 0; j < K; j++)
@@ -50,14 +51,21 @@ int kmeans(Point *points, Point *clusters, int *count)
             float distx = points[i].x - clusters[j].x;
             float disty = points[i].y - clusters[j].y;
 
-            float dist = distx * distx + disty * disty;
-
-            if (dist < min)
-            {
-                min = dist;
-                min_index = j;
-            }
+            dist[j] = distx * distx + disty * disty;
         }
+
+        for (int j = 0; j < K; j++)
+        {
+             min = dist[j] < min ? dist[j] : min;
+        }
+
+        for (int j = 0; j < K; j++)
+        {
+             min_index = dist[j] == min ? j : min_index;
+        }
+        
+
+
         count[min_index]++;
         sum_of_distances[min_index].x += points[i].x;
         sum_of_distances[min_index].y += points[i].y;
