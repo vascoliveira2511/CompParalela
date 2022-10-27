@@ -36,26 +36,29 @@ int kmeans(float *px, float *py, float *cx, float *cy, int *count)
 
     for (int i = 0; i < N; i++)
     {
-        // de onde vem este min??
         float min = 10000;
         int min_index = 0;
-
-        float aux_x = px[i];
-        float aux_y = py[i];
+        for dist[j];
 
         // esta secção vai correr N*K vezes
         for (int j = 0; j < K; j++)
         {
-            aux_x -= cx[j];
-            aux_y -= cy[j];
+            float aux_x = px[i] - cx[j];
+            float aux_y = py[i] - cy[j];
 
-            float dist = aux_x * aux_x + aux_y * aux_y;
-            if (dist < min)
-            {
-                min = dist;
-                min_index = j;
-            }
+            dist[j] = aux_x * aux_x + aux_y * aux_y;
         }
+
+        for (int j = 0; j < K; j++)
+        {
+            min = dist[j] < min ? dist[j] : min;
+        }
+
+        for (int j = 0; j < K; j++)
+        {
+             min_index = dist[j] == min ? j : min_index;
+        }
+
         count[min_index]++;
         sum_x[min_index] += px[i];
         sum_y[min_index] += py[i];

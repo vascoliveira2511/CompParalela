@@ -56,21 +56,16 @@ int kmeans(Point *points, Point *clusters, int *count)
 
         for (int j = 0; j < K; j++)
         {
-            if (dist[j] < min)
-            {      
-                min = dist[j];
-            }
+             min = dist[j] < min ? dist[j] : min;
         }
 
         for (int j = 0; j < K; j++)
         {
-            if (dist[j] == min)
-            {   
-                min_index = j;
-                break;
-            }
-            //min_index = dist[j] == min ? j : min_index;           
+             min_index = dist[j] == min ? j : min_index;
         }
+        
+
+
         count[min_index]++;
         sum_of_distances[min_index].x += points[i].x;
         sum_of_distances[min_index].y += points[i].y;
@@ -112,7 +107,8 @@ int main()
     printf("Iterations: %d times \n ", iterator);
     for (int i = 0; i < K; i++)
     {
-        printf("Cluster %d: (%f, %f) %d\n", i, clusters[i].x, clusters[i].y, count[i]);
+        printf("Cluster %d: (%f, %f) \n", i, clusters[i].x, clusters[i].y);
+        printf("Count: %d \n", count[i]);
     }
 
     free(points);

@@ -40,21 +40,24 @@ int kmeans(float *px, float *py, float *cx, float *cy, int *count)
         float min = 10000;
         int min_index = 0;
 
-        float aux_x = px[i];
-        float aux_y = py[i];
+        float dist[K];
 
         // esta secção vai correr N*K vezes
         for (int j = 0; j < K; j++)
         {
-            aux_x -= cx[j];
-            aux_y -= cy[j];
+            float distx = px[i] - cx[j];
+            float disty = py[i] - cy[j];
 
-            float dist = aux_x * aux_x + aux_y * aux_y;
-            if (dist < min)
-            {
-                min = dist;
-                min_index = j;
-            }
+            dist[j] = distx * distx + disty * disty;
+        }
+        for (int j = 0; j < K; j++)
+        {
+             min = dist[j] < min ? dist[j] : min;
+        }
+
+        for (int j = 0; j < K; j++)
+        {
+             min_index = dist[j] == min ? j : min_index;
         }
         count[min_index]++;
         sum_x[min_index] += px[i];
@@ -91,13 +94,18 @@ int main()
 
     do
     {
+        for (int i = 0; i < K; i++)
+    {
+        printf("Cluster %d: (%f, %f) \n", i, cx[i], cy[i]);
+        printf("Count: %d \n", count[i]);
+    }
         iterator++;
     } while (kmeans(px, py, cx, cy, count));
 
     printf("Iterations: %d times \n ", iterator);
     for (int i = 0; i < K; i++)
     {
-        printf("Cluster %d: (%f, %f) \n", i, cx[i], cy[i]);
+        printf("Cluster %d: (%.3f, %.3f) \n", i, cx[i], cy[i]);
         printf("Count: %d \n", count[i]);
     }
 
