@@ -61,15 +61,15 @@ int kmeans(Point *points, Point *clusters, int *count)
                 min = dist[j];
             }
         }
-
         for (int j = 0; j < K; j++)
         {
-            if (dist[j] == min)
-            {   
-                min_index = j;
-                break;
-            }
-            //min_index = dist[j] == min ? j : min_index;           
+            //Secção do código que garante resultados exatamente iguais aos do enunciado
+            //if (dist[j] == min)
+            //{   
+            //    min_index = j;
+            //    break;
+            //}
+            min_index = dist[j] == min ? j : min_index;           
         }
         count[min_index]++;
         sum_of_distances[min_index].x += points[i].x;

@@ -40,8 +40,7 @@ int kmeans(Point *points, Point *clusters, int *count)
 
     for (int i = 0; i < N; i++)
     {
-        // de onde vem este min??
-        float min = 1000000000;
+        float min = 10000000;
         int min_index = 0;
 
         // esta secção vai correr N*K vezes

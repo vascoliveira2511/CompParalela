@@ -56,6 +56,7 @@ int kmeans(Point *points, Point *clusters, int *count)
 
         for (int j = 0; j < K; j++)
         {
+
              min = dist[j] < min ? dist[j] : min;
         }
 
