@@ -15,14 +15,12 @@ void init(Point *points, Point *clusters)
 {
     srand(10);
 
-#pragma omp parallel for schedule(static)
     for (int i = 0; i < N; i++)
     {
         points[i].x = (float)rand() / RAND_MAX;
         points[i].y = (float)rand() / RAND_MAX;
     }
 
-#pragma omp parallel for schedule(static)
     for (int i = 0; i < K; i++)
     {
         clusters[i].x = points[i].x;
@@ -34,9 +32,8 @@ int kmeans(Point *points, Point *clusters, int *count)
 {
     int changed = 0;
     Point *sum_of_distances = malloc(K * sizeof(Point));
-    float *dist = malloc(K * sizeof(float));
+    
 
-#pragma omp parallel for schedule(static)
     for (int i = 0; i < K; i++)
     {
         count[i] = 0;
@@ -44,9 +41,13 @@ int kmeans(Point *points, Point *clusters, int *count)
         sum_of_distances[i].y = 0;
     }
 
-#pragma omp parallel for schedule(static) private(dist)
+    #pragma omp parallel for
+
+    
+
     for (int i = 0; i < N; i++)
     {
+        float *dist = malloc(K * sizeof(float));
         // de onde vem este min??
         float min = 1000000000;
         int min_index = 0;
@@ -71,19 +72,19 @@ int kmeans(Point *points, Point *clusters, int *count)
         for (int j = 0; j < K; j++)
         {
             // Secção do código que garante resultados exatamente iguais aos do enunciado
-            // if (dist[j] == min)
-            //{
-            //     min_index = j;
-            //     break;
-            // }
-            min_index = dist[j] == min ? j : min_index;
+            if (dist[j] == min)
+            {
+                 min_index = j;
+                 break;
+            }
+            //min_index = dist[j] == min ? j : min_index;
         }
+        free(dist);
         count[min_index]++;
         sum_of_distances[min_index].x += points[i].x;
         sum_of_distances[min_index].y += points[i].y;
     }
 
-#pragma omp parallel for schedule(static)
     for (int i = 0; i < K; i++)
     {
         float x = sum_of_distances[i].x / count[i];
@@ -97,7 +98,7 @@ int kmeans(Point *points, Point *clusters, int *count)
         }
     }
 
-    free(dist);
+    
     free(sum_of_distances);
 
     return changed;
@@ -105,9 +106,12 @@ int kmeans(Point *points, Point *clusters, int *count)
 
 int main(int argc, char **argv)
 {
+    if (argc < 4 ) return -1;
+
     N = atoi(argv[1]);
     K = atoi(argv[2]);
     int num_threads = atoi(argv[3]);
+    omp_set_num_threads(num_threads);
 
     Point *points = malloc(N * sizeof(Point));
     Point *clusters = malloc(K * sizeof(Point));
@@ -119,9 +123,9 @@ int main(int argc, char **argv)
     do
     {
         iterator++;
-    } while (kmeans(points, clusters, count) && iterator < 20);
+    } while (kmeans(points, clusters, count) && iterator <= 20);
 
-    printf("N = %d, K = %d\n ", N, K);
+    printf("N = %d, K = %d\n", N, K);
     for (int i = 0; i < K; i++)
     {
         printf("Center: (%f, %f) %d\n", clusters[i].x, clusters[i].y, count[i]);
