@@ -15,12 +15,14 @@ void init(Point *points, Point *clusters)
 {
     srand(10);
 
+    #pragma omp parallel for
     for (int i = 0; i < N; i++)
     {
         points[i].x = (float)rand() / RAND_MAX;
         points[i].y = (float)rand() / RAND_MAX;
     }
 
+    #pragma omp parallel for
     for (int i = 0; i < K; i++)
     {
         clusters[i].x = points[i].x;
@@ -67,7 +69,6 @@ int kmeans(Point *points, Point *clusters, int *count)
             }
         }
 
-        #pragma omp parallel for
         for (int j = 0; j < K; j++)
         {
             //Secção do código que garante resultados exatamente iguais aos do enunciado
@@ -99,28 +100,30 @@ int kmeans(Point *points, Point *clusters, int *count)
     return changed;
 }
 
-int main()
+int main(int argc, char** argv)
 {
-    Point *points = malloc(N * sizeof(Point));
-    // float *py = (float *)malloc(N * sizeof(float));
-    Point clusters[K];
-    // float *cy = (float *)malloc(K * sizeof(float));
+    int N = atoi(argv[1]);
+    int K = atoi(argv[2]);
+    int num_threads = atoi(argv[3]);
 
+    Point *points  = malloc(N * sizeof(Point));
+    Point clusters = malloc(K * sizeof(Point));
+    int   count    = malloc(K * sizeof(Point));
     int iterator = 0;
-    int count[K];
 
     init(points, clusters);
 
     do
     {
         iterator++;
-    } while (kmeans(points, clusters, count));
+    } while (kmeans(points, clusters, count) && iterator < 20);
 
-    printf("Iterations: %d times \n ", iterator);
+    printf("N = %d, K = %d\n ", N, K);
     for (int i = 0; i < K; i++)
     {
         printf("Center: (%f, %f) %d\n", clusters[i].x, clusters[i].y, count[i]);
     }
+    printf("Iterations: %d times \n ", iterator);
 
     free(points);
 
