@@ -3,15 +3,13 @@
 #include <math.h>
 #include <omp.h>
 
-int K;
-int N;
 
 typedef struct Point
 {
     float x, y;
 } Point;
 
-void init(Point *points, Point *clusters)
+void init(Point *points, Point *clusters, const int N, const int K)
 {
     srand(10);
 
@@ -28,10 +26,10 @@ void init(Point *points, Point *clusters)
     }
 }
 
-int kmeans(Point *points, Point *clusters, int *count)
+int kmeans(Point *points, Point *clusters, int *count, const int N, const int K)
 {
     int changed = 0;
-    Point *sum_of_distances = malloc(K * sizeof(Point));
+    Point sum_of_distances[K];
     
 
     for (int i = 0; i < K; i++)
@@ -42,12 +40,9 @@ int kmeans(Point *points, Point *clusters, int *count)
     }
 
     #pragma omp parallel for
-
-    
-
     for (int i = 0; i < N; i++)
     {
-        float *dist = malloc(K * sizeof(float));
+        float dist [K];
         // de onde vem este min??
         float min = 1000000000;
         int min_index = 0;
@@ -79,7 +74,6 @@ int kmeans(Point *points, Point *clusters, int *count)
             }
             //min_index = dist[j] == min ? j : min_index;
         }
-        free(dist);
         count[min_index]++;
         sum_of_distances[min_index].x += points[i].x;
         sum_of_distances[min_index].y += points[i].y;
@@ -98,9 +92,6 @@ int kmeans(Point *points, Point *clusters, int *count)
         }
     }
 
-    
-    free(sum_of_distances);
-
     return changed;
 }
 
@@ -108,29 +99,31 @@ int main(int argc, char **argv)
 {
     if (argc < 4 ) return -1;
 
-    N = atoi(argv[1]);
-    K = atoi(argv[2]);
+    const int N = atoi(argv[1]);
+    const int K = atoi(argv[2]);
+
     int num_threads = atoi(argv[3]);
-    omp_set_num_threads(num_threads);
+
+    //omp_set_num_threads(num_threads);
 
     Point *points = malloc(N * sizeof(Point));
     Point *clusters = malloc(K * sizeof(Point));
     int *count = malloc(K * sizeof(Point));
     int iterator = 0;
 
-    init(points, clusters);
+    init(points, clusters, N, K);
 
     do
     {
         iterator++;
-    } while (kmeans(points, clusters, count) && iterator <= 20);
+    } while (kmeans(points, clusters, count, N, K) && iterator <= 20);
 
     printf("N = %d, K = %d\n", N, K);
     for (int i = 0; i < K; i++)
     {
         printf("Center: (%f, %f) %d\n", clusters[i].x, clusters[i].y, count[i]);
     }
-    printf("Iterations: %d times \n ", iterator);
+    printf("Iterations: %d times \n", iterator);
 
     free(points);
     free(clusters);
