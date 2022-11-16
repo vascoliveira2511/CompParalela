@@ -109,10 +109,10 @@ int main()
         iterator++;
     } while (kmeans(points, clusters, count));
 
-    printf("Iterations: %d times \n ", iterator);
+    printf("Iterations: %d times \n", iterator);
     for (int i = 0; i < K; i++)
     {
-        printf("center: (%f, %f) %d\n", i, clusters[i].x, clusters[i].y, count[i]);
+        printf("center: (%f, %f) %d\n", clusters[i].x, clusters[i].y, count[i]);
     }
 
     free(points);

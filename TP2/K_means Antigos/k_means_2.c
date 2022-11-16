@@ -17,13 +17,11 @@ void init(Point *points, Point *clusters, const int N, const int K, const int n_
 {
     srand(10);
 
-
     for (int i = 0; i < N; i++)
     {
         points[i].x = (float)rand() / RAND_MAX;
         points[i].y = (float)rand() / RAND_MAX;
     }
-    
     
     for (int i = 0; i < K; i++)
     {
@@ -48,13 +46,27 @@ int kmeans(Point *points, Point *clusters, int *count, const int N, const int K,
 
     #pragma omp parallel num_threads(n_threads)
     {
-        #pragma omp for reduction (+:sum_dist_x[:K]) reduction (+:sum_dist_y[:K]) reduction (+:count[:K]) 
+        int countp[K];
+        float sum_dist_xp[K];
+        float sum_dist_yp[K];
+
+        for (int i = 0; i < K; i++)
+        {
+            count[i] = 0;
+            sum_dist_xp[i] = 0;
+            sum_dist_yp[i] = 0;
+        }
+
+        #pragma omp for firstprivate(clusters)
         for (int i = 0; i < N; i++)
         {
             float dist [K];
-            float min_value = 10000;
+            // de onde vem este min??
+            float min = 10000;
             int min_index = 0;
 
+            // esta secção vai correr N*K vezes
+            // Este loop vai ser vetorizado e paralelizado. 
             for (int j = 0; j < K; j++)
             {
                 float distx = points[i].x - clusters[j].x;
@@ -65,19 +77,29 @@ int kmeans(Point *points, Point *clusters, int *count, const int N, const int K,
             
             for (int j = 0; j < K; j++)
             {
-                if (dist[j] < min_value)
+                if (dist[j] < min)
                 {      
-                    min_value = dist[j];
+                    min = dist[j];
                 }
             }
+            for (int j = 0; j < K; j++)
+            {
+                min_index = dist[j] == min ? j : min_index;           
+            }
 
-            for (int j = 0; j < K; j++) min_index = dist[j] == min_value ? j : min_index;
 
-
-            count[min_index]++;
-            sum_dist_x[min_index] += points[i].x;
-            sum_dist_y[min_index] += points[i].y;
+            countp[min_index]++;
+            sum_dist_xp[min_index] += points[i].x;
+            sum_dist_yp[min_index] += points[i].y;
             
+        }
+        #pragma omp critical
+        {
+            for(int i=0; i<10; ++i) {
+                count[i] += countp[i];
+                sum_dist_x[i] += sum_dist_xp[i];
+                sum_dist_y[i] += sum_dist_yp[i];
+            }
         }
     }
 

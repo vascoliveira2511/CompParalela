@@ -17,13 +17,11 @@ void init(Point *points, Point *clusters, const int N, const int K, const int n_
 {
     srand(10);
 
-
     for (int i = 0; i < N; i++)
     {
         points[i].x = (float)rand() / RAND_MAX;
         points[i].y = (float)rand() / RAND_MAX;
     }
-    
     
     for (int i = 0; i < K; i++)
     {
@@ -48,13 +46,16 @@ int kmeans(Point *points, Point *clusters, int *count, const int N, const int K,
 
     #pragma omp parallel num_threads(n_threads)
     {
-        #pragma omp for reduction (+:sum_dist_x[:K]) reduction (+:sum_dist_y[:K]) reduction (+:count[:K]) 
+        #pragma omp for firstprivate(clusters) reduction (+:sum_dist_x[:K]) reduction (+:sum_dist_y[:K]) reduction (+:count[:K]) 
         for (int i = 0; i < N; i++)
         {
             float dist [K];
-            float min_value = 10000;
+            // de onde vem este min??
+            float min = 10000;
             int min_index = 0;
 
+            // esta secção vai correr N*K vezes
+            // Este loop vai ser vetorizado e paralelizado. 
             for (int j = 0; j < K; j++)
             {
                 float distx = points[i].x - clusters[j].x;
@@ -65,13 +66,15 @@ int kmeans(Point *points, Point *clusters, int *count, const int N, const int K,
             
             for (int j = 0; j < K; j++)
             {
-                if (dist[j] < min_value)
+                if (dist[j] < min)
                 {      
-                    min_value = dist[j];
+                    min = dist[j];
                 }
             }
-
-            for (int j = 0; j < K; j++) min_index = dist[j] == min_value ? j : min_index;
+            for (int j = 0; j < K; j++)
+            {
+                min_index = dist[j] == min ? j : min_index;           
+            }
 
 
             count[min_index]++;

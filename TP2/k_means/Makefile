@@ -6,7 +6,7 @@ INCLUDE	= include/
 EXEC	= k_means
 
 
-CFLAGS = -O2 -fopenmp -ftree-vectorize -msse4 -funroll-loops
+CFLAGS = -O2 -fopenmp -ftree-vectorize -msse4 -mavx -funroll-loops
 
 .DEFAULT_GOAL = k_means
 
