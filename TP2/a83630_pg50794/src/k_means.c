@@ -3,21 +3,28 @@
 #include <math.h>
 #include <omp.h>
 
+
+
+
 typedef struct Point
 {
     float x, y;
 } Point;
 
+
+
 void init(Point *points, Point *clusters, const int N, const int K, const int n_threads)
 {
     srand(10);
+
 
     for (int i = 0; i < N; i++)
     {
         points[i].x = (float)rand() / RAND_MAX;
         points[i].y = (float)rand() / RAND_MAX;
     }
-
+    
+    
     for (int i = 0; i < K; i++)
     {
         clusters[i].x = points[i].x;
@@ -28,7 +35,7 @@ void init(Point *points, Point *clusters, const int N, const int K, const int n_
 int kmeans(Point *points, Point *clusters, int *count, const int N, const int K, const int n_threads)
 {
     int changed = 0;
-
+    
     float sum_dist_x[K];
     float sum_dist_y[K];
 
@@ -39,12 +46,12 @@ int kmeans(Point *points, Point *clusters, int *count, const int N, const int K,
         sum_dist_y[i] = 0;
     }
 
-//#pragma omp  
-    //{
-        #pragma omp parallel for guided reduction (+:sum_dist_x[:K]) reduction (+:sum_dist_y[:K]) reduction (+:count[:K]) num_threads(n_threads)
+    #pragma omp parallel num_threads(n_threads)
+    {
+        #pragma omp for reduction (+:sum_dist_x[:K]) reduction (+:sum_dist_y[:K]) reduction (+:count[:K]) 
         for (int i = 0; i < N; i++)
         {
-            float dist[K];
+            float dist [K];
             float min_value = 10000;
             int min_index = 0;
 
@@ -55,23 +62,24 @@ int kmeans(Point *points, Point *clusters, int *count, const int N, const int K,
 
                 dist[j] = distx * distx + disty * disty;
             }
-
+            
             for (int j = 0; j < K; j++)
             {
                 if (dist[j] < min_value)
-                {
+                {      
                     min_value = dist[j];
                 }
             }
 
-            for (int j = 0; j < K; j++)
-                min_index = dist[j] == min_value ? j : min_index;
+            for (int j = 0; j < K; j++) min_index = dist[j] == min_value ? j : min_index;
+
 
             count[min_index]++;
             sum_dist_x[min_index] += points[i].x;
             sum_dist_y[min_index] += points[i].y;
+            
         }
-    //}
+    }
 
     for (int i = 0; i < K; i++)
     {
@@ -91,15 +99,14 @@ int kmeans(Point *points, Point *clusters, int *count, const int N, const int K,
 
 int main(int argc, char **argv)
 {
-    if (argc < 4)
-        return -1;
+    if (argc < 4 ) return -1;
 
     const int N = atoi(argv[1]);
     const int K = atoi(argv[2]);
 
     const int n_threads = atoi(argv[3]);
 
-    // omp_set_num_threads(num_threads);
+    //omp_set_num_threads(num_threads);
 
     Point *points = malloc(N * sizeof(Point));
     Point *clusters = malloc(K * sizeof(Point));
