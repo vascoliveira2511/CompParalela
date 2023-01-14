@@ -4,6 +4,10 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
+#define NUM_BLOCKS 512
+#define NUM_THREADS_PER_BLOCK 256
+#define SIZE NUM_BLOCKS *NUM_THREADS_PER_BLOCK
+
 typedef struct Point
 {
     float x, y;
@@ -72,10 +76,8 @@ int kmeans(Point *points, Point *clusters, int *count, const int N, const int K)
 
     int block_size = 32;
     int num_blocks = (N + block_size - 1) / block_size;
-    compute_distances<<<num_blocks, block_size>>>(points, clusters, count, dists, indices, N, K);
 
-    cudaMemcpy(indices, indices, N * sizeof(int), cudaMemcpyDeviceToHost);
-    cudaMemcpy(dists, dists, N * sizeof(float), cudaMemcpyDeviceToHost);
+    compute_distances<<<NUM_THREADS_PER_BLOCK, NUM_BLOCKS>>>(points, clusters, count, dists, indices, N, K);
 
     float sum_dist_x[K];
     float sum_dist_y[K];
@@ -93,12 +95,7 @@ int kmeans(Point *points, Point *clusters, int *count, const int N, const int K)
         sum_dist_y[min_index] += points[i].y;
     }
 
-    cudaMemcpy(sum_dist_x, sum_dist_x, K * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(sum_dist_y, sum_dist_y, K * sizeof(float), cudaMemcpyHostToDevice);
-
-    update_clusters<<<num_blocks, block_size>>>(clusters, count, sum_dist_x, sum_dist_y, K);
-
-    cudaMemcpy(clusters, clusters, K * sizeof(Point), cudaMemcpyDeviceToHost);
+    update_clusters<<<NUM_THREADS_PER_BLOCK, NUM_BLOCKS>>>(clusters, count, sum_dist_x, sum_dist_y, K);
 
     for (int i = 0; i < K; i++)
     {
