@@ -107,22 +107,23 @@ int main(int argc, char **argv)
     int num_procs, rank;
 
     // Iniciating points and clusters
-    Point *points = (Point *)malloc(N * sizeof(Point));      // points to be clustered
-    int *global_count = (int *)malloc(K * sizeof(int));      // how many elements in clusters for rank 0
-    float *global_sumx = (float *)malloc(K * sizeof(float)); // sum of distances x for rank 0
-    float *global_sumy = (float *)malloc(K * sizeof(float)); // sum of distances y for rank 0
-    int iterator = 0;                                        // How many times the algorithm has run
-    Point *clusters = (Point *)malloc(K * sizeof(Point));    // centers of clusters
-    int changing = 1;                                        // If the clusters are changing
-    init(points, clusters, N, K);                            // Initializing points and clusters
+    Point *points = (Point *)malloc(N * sizeof(Point)); // points to be clustered
+
+    int iterator = 0;                                     // How many times the algorithm has run
+    Point *clusters = (Point *)malloc(K * sizeof(Point)); // centers of clusters
+    int changing = 1;                                     // If the clusters are changing
+    init(points, clusters, N, K);                         // Initializing points and clusters
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    float *sumx = (float *)malloc(K * sizeof(float)); // sum of distances in x
-    float *sumy = (float *)malloc(K * sizeof(float)); // sum of distances in y
-    int *count = (int *)malloc(K * sizeof(Point));    // how many elements in clusters
+    float *sumx = (float *)malloc(K * sizeof(float));        // sum of distances in x
+    float *sumy = (float *)malloc(K * sizeof(float));        // sum of distances in y
+    int *count = (int *)malloc(K * sizeof(int));             // how many elements in clusters
+    int *global_count = (int *)malloc(K * sizeof(int));      // how many elements in clusters for rank 0
+    float *global_sumx = (float *)malloc(K * sizeof(float)); // sum of distances x for rank 0
+    float *global_sumy = (float *)malloc(K * sizeof(float)); // sum of distances y for rank 0
 
     int chunk_size = N / num_procs; // Size of each chunk
 
@@ -165,44 +166,54 @@ int main(int argc, char **argv)
         local_points, chunk_size, type_point,
         0, MPI_COMM_WORLD);
 
-    while (changing && iterator <= 40)
+    do
     {
-
         MPI_Bcast(clusters, K, type_point, 0, MPI_COMM_WORLD);
 
         kmeans(local_points, clusters, sumx, sumy, count, chunk_size, K);
 
         // If its not the main process, then it needs to end its results
 
-        MPI_Reduce(&count, &global_count, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-        MPI_Reduce(&sumx, &global_sumx, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
-        MPI_Reduce(&sumy, &global_sumy, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+        for (int i = 0; i < K; i++)
+        {
+            MPI_Reduce(&count[i], &global_count[i], 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+            MPI_Reduce(&sumx[i], &global_sumx[i], 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+            MPI_Reduce(&sumy[i], &global_sumy[i], 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+        }
 
         // If it is, then we need to gather all the results (sums and counts)
         if (rank == 0)
         {
             // After gathering, we need to check for changes
             changing = anyChanged(clusters, sumx, sumy, count, K);
+            if (!changing)
+                MPI_Bcast(&changing, 1, MPI_INT, 0, MPI_COMM_WORLD);
             iterator++;
         }
-    }
+        MPI_Barrier(MPI_COMM_WORLD);
+
+    } while (changing && iterator < 40);
 
     if (rank == 0) // If it is the main process, then we need to print the resultss
     {
         printf("N = %d, K = %d\n", N, K);
         for (int i = 0; i < K; i++)
         {
-            printf("Center: (%.3f, %.3f) %d\n", clusters[i].x, clusters[i].y, count[i]);
+            printf("Center: (%.3f, %.3f) %d\n", clusters[i].x, clusters[i].y, global_count[i]);
         }
         printf("Iterations: %d times \n", iterator);
     }
 
-    free(local_points);
-    free(clusters);
+    free(sumx);
+    free(sumy);
     free(count);
-    MPI_Type_free(&type_point);
+    free(local_points);
     MPI_Finalize();
+    free(global_count);
+    free(global_sumx);
+    free(global_sumy);
     free(points);
+    free(clusters);
 
     return 0;
 }

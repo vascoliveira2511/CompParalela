@@ -39,38 +39,41 @@ int kmeans(Point *points, Point *clusters, int *count, const int N, const int K,
         sum_dist_y[i] = 0;
     }
 
-//#pragma omp  
+    // #pragma omp
     //{
-        #pragma omp parallel for guided reduction (+:sum_dist_x[:K]) reduction (+:sum_dist_y[:K]) reduction (+:count[:K]) num_threads(n_threads)
-        for (int i = 0; i < N; i++)
+#pragma omp parallel for guided reduction(+                                                         \
+                                          : sum_dist_x[:K]) reduction(+                             \
+                                                                      : sum_dist_y[:K]) reduction(+ \
+                                                                                                  : count[:K]) num_threads(n_threads)
+    for (int i = 0; i < N; i++)
+    {
+        float dist[K];
+        float min_value = 10000;
+        int min_index = 0;
+
+        for (int j = 0; j < K; j++)
         {
-            float dist[K];
-            float min_value = 10000;
-            int min_index = 0;
+            float distx = points[i].x - clusters[j].x;
+            float disty = points[i].y - clusters[j].y;
 
-            for (int j = 0; j < K; j++)
-            {
-                float distx = points[i].x - clusters[j].x;
-                float disty = points[i].y - clusters[j].y;
-
-                dist[j] = distx * distx + disty * disty;
-            }
-
-            for (int j = 0; j < K; j++)
-            {
-                if (dist[j] < min_value)
-                {
-                    min_value = dist[j];
-                }
-            }
-
-            for (int j = 0; j < K; j++)
-                min_index = dist[j] == min_value ? j : min_index;
-
-            count[min_index]++;
-            sum_dist_x[min_index] += points[i].x;
-            sum_dist_y[min_index] += points[i].y;
+            dist[j] = distx * distx + disty * disty;
         }
+
+        for (int j = 0; j < K; j++)
+        {
+            if (dist[j] < min_value)
+            {
+                min_value = dist[j];
+            }
+        }
+
+        for (int j = 0; j < K; j++)
+            min_index = dist[j] == min_value ? j : min_index;
+
+        count[min_index]++;
+        sum_dist_x[min_index] += points[i].x;
+        sum_dist_y[min_index] += points[i].y;
+    }
     //}
 
     for (int i = 0; i < K; i++)
