@@ -95,7 +95,8 @@ int kmeans(Point *points, Point *clusters, int *count, const int N, const int K)
 
     cudaMemcpy(sum_dist_x, sum_dist_x, K * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(sum_dist_y, sum_dist_y, K * sizeof(float), cudaMemcpyHostToDevice);
-    update_clusters<<<1, K>>>(clusters, count, sum_dist_x, sum_dist_y, K);
+
+    update_clusters<<<num_blocks, block_size>>>(clusters, count, sum_dist_x, sum_dist_y, K);
 
     cudaMemcpy(clusters, clusters, K * sizeof(Point), cudaMemcpyDeviceToHost);
 
