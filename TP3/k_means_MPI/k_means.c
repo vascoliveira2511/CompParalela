@@ -186,7 +186,7 @@ int kmeans(Point *points, Point *clusters, float *sumx, float *sumy, int *count,
             }
         }
 
-        if (rank == 0)
+        if (rank == 0) // If it is the main process, then we need to print the resultss
         {
             printf("N = %d, K = %d\n", N, K);
             for (int i = 0; i < K; i++)
