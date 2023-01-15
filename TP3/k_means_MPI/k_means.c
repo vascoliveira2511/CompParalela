@@ -124,8 +124,10 @@ int main(int argc, char **argv)
     int *global_count = (int *)malloc(K * sizeof(int));      // how many elements in clusters for rank 0
     float *global_sumx = (float *)malloc(K * sizeof(float)); // sum of distances x for rank 0
     float *global_sumy = (float *)malloc(K * sizeof(float)); // sum of distances y for rank 0
+    
 
-    int chunk_size = N / num_procs; // Size of each chunk
+    //This way we prevent every point is calculated at same time?
+    int chunk_size = N / (num_procs-1); // Size of each chunk
 
     // Creating new type for sending points
     MPI_Datatype tmp_type, type_point;
@@ -140,7 +142,6 @@ int main(int argc, char **argv)
     int array_of_blocklengths[] = {2};
 
     /* Says where every block starts in memory, counting from the beginning of the struct. */
-    // MPI_Aint array_of_displaysments[1] = {offsetof( Point, x ), offsetof( Point, y )};
     MPI_Aint address1, address2;
     Point _aux;
     MPI_Get_address(&_aux, &address1);
@@ -168,17 +169,18 @@ int main(int argc, char **argv)
 
     do
     {
+        printf("Iteração %d", iterator);
+        //we update every cluster with the information of the new clusters
         MPI_Bcast(clusters, K, type_point, 0, MPI_COMM_WORLD);
-
+        
         kmeans(local_points, clusters, sumx, sumy, count, chunk_size, K);
 
-        // If its not the main process, then it needs to end its results
 
         for (int i = 0; i < K; i++)
         {
             MPI_Reduce(&count[i], &global_count[i], 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-            MPI_Reduce(&sumx[i], &global_sumx[i], 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
-            MPI_Reduce(&sumy[i], &global_sumy[i], 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+            MPI_Reduce(&sumx[i], &global_sumx[i], 1,   MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+            MPI_Reduce(&sumy[i], &global_sumy[i], 1,   MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
         }
 
         // If it is, then we need to gather all the results (sums and counts)
@@ -194,7 +196,9 @@ int main(int argc, char **argv)
 
     } while (changing && iterator < 40);
 
-    if (rank == 0) // If it is the main process, then we need to print the resultss
+    
+
+    if (rank == 0) // If it is the main process, then we need to print the results
     {
         printf("N = %d, K = %d\n", N, K);
         for (int i = 0; i < K; i++)
@@ -208,12 +212,12 @@ int main(int argc, char **argv)
     free(sumy);
     free(count);
     free(local_points);
-    MPI_Finalize();
     free(global_count);
     free(global_sumx);
     free(global_sumy);
+
     free(points);
     free(clusters);
-
+    MPI_Finalize();
     return 0;
 }
