@@ -125,7 +125,7 @@ int main(int argc, char **argv)
     float *global_sumx = (float *)malloc(K * sizeof(float)); // sum of distances x for rank 0
     float *global_sumy = (float *)malloc(K * sizeof(float)); // sum of distances y for rank 0
 
-    int chunk_size = N / num_procs; // Size of each chunk
+    int chunk_size = N / (num_procs - 1); // Size of each chunk
 
     // Creating new type for sending points
     MPI_Datatype tmp_type, type_point;
